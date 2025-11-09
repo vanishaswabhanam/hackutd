@@ -4,117 +4,86 @@ import {
   Shield, Search, Filter, Activity, AlertTriangle, 
   CheckCircle, Clock, Eye, TrendingUp, Users 
 } from 'lucide-react'
+import { getAllInvestigations } from '../services/agentOrchestrator'
+import messageBus from '../services/messageBus'
 
 const AdminDashboard = () => {
+  const [vendors, setVendors] = useState([])
   const [activities, setActivities] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
 
-  const agents = [
-    { id: 1, name: 'Intake Agent', status: 'active', icon: '📋', tasksActive: 3, color: 'green' },
-    { id: 2, name: 'Digital Forensics', status: 'active', icon: '🔍', tasksActive: 2, color: 'blue' },
-    { id: 3, name: 'Financial Sleuth', status: 'active', icon: '💰', tasksActive: 1, color: 'yellow' },
-    { id: 4, name: 'Compliance Orchestrator', status: 'idle', icon: '⚖️', tasksActive: 0, color: 'purple' },
-    { id: 5, name: 'Privacy Guardian', status: 'active', icon: '🔒', tasksActive: 2, color: 'pink' },
-    { id: 6, name: 'Risk Synthesizer', status: 'active', icon: '🎯', tasksActive: 1, color: 'orange' },
-  ]
-
-  const vendors = [
-    {
-      id: 1,
-      name: 'TechCorp Solutions',
-      status: 'under-review',
-      riskScore: 35,
-      riskLevel: 'low',
-      stage: 'Financial Investigation',
-      submittedDate: '2025-11-09',
-      currentAgent: 'Financial Sleuth',
-    },
-    {
-      id: 2,
-      name: 'Global Logistics Inc',
-      status: 'under-review',
-      riskScore: 72,
-      riskLevel: 'high',
-      stage: 'Security Review',
-      submittedDate: '2025-11-08',
-      currentAgent: 'Digital Forensics',
-    },
-    {
-      id: 3,
-      name: 'DataStream Analytics',
-      status: 'approved',
-      riskScore: 28,
-      riskLevel: 'low',
-      stage: 'Approved',
-      submittedDate: '2025-11-07',
-      currentAgent: null,
-    },
-    {
-      id: 4,
-      name: 'SecureNet Systems',
-      status: 'under-review',
-      riskScore: 55,
-      riskLevel: 'medium',
-      stage: 'Privacy Scan',
-      submittedDate: '2025-11-09',
-      currentAgent: 'Privacy Guardian',
-    },
-    {
-      id: 5,
-      name: 'QuickPay Services',
-      status: 'flagged',
-      riskScore: 89,
-      riskLevel: 'high',
-      stage: 'Digital Forensics',
-      submittedDate: '2025-11-06',
-      currentAgent: 'Digital Forensics',
-    },
-    {
-      id: 6,
-      name: 'CloudFirst Tech',
-      status: 'under-review',
-      riskScore: 42,
-      riskLevel: 'medium',
-      stage: 'Compliance Check',
-      submittedDate: '2025-11-09',
-      currentAgent: 'Compliance Orchestrator',
-    },
-  ]
-
+  // Load investigations from localStorage
   useEffect(() => {
-    // Simulate real-time activity feed
-    const interval = setInterval(() => {
-      const newActivity = generateRandomActivity()
-      setActivities(prev => [newActivity, ...prev].slice(0, 20))
-    }, 3000)
+    const loadInvestigations = () => {
+      const investigations = getAllInvestigations()
+      
+      // Transform investigations to vendor format
+      const vendorData = investigations.map(inv => ({
+        id: inv.vendorId,
+        name: inv.vendorData.companyName || 'Unknown Company',
+        status: inv.recommendation === 'approve' ? 'approved' : 
+                inv.recommendation === 'reject' ? 'rejected' : 'under-review',
+        riskScore: inv.riskScore,
+        riskLevel: inv.riskLevel,
+        stage: inv.recommendation === 'approve' ? 'Approved' :
+               inv.recommendation === 'reject' ? 'Rejected' : 
+               'Under Review',
+        submittedDate: new Date(inv.timestamp).toLocaleDateString(),
+        currentAgent: inv.recommendation === 'review' ? 'Awaiting Human Review' : null,
+        duration: inv.duration,
+      }))
+      
+      setVendors(vendorData.reverse()) // Show newest first
+    }
 
-    // Initial activities
-    setActivities([
-      { id: 1, agent: 'Financial Sleuth', action: 'Completed credit check for TechCorp Solutions', time: new Date(), type: 'success' },
-      { id: 2, agent: 'Digital Forensics', action: 'Found 3 historical incidents for Global Logistics Inc', time: new Date(Date.now() - 60000), type: 'warning' },
-      { id: 3, agent: 'Privacy Guardian', action: 'Masked 12 PII fields in SecureNet Systems documents', time: new Date(Date.now() - 120000), type: 'info' },
-      { id: 4, agent: 'Intake Agent', action: 'New vendor submission: CloudFirst Tech', time: new Date(Date.now() - 180000), type: 'info' },
-    ])
+    loadInvestigations()
+
+    // Poll for updates every 2 seconds
+    const interval = setInterval(loadInvestigations, 2000)
 
     return () => clearInterval(interval)
   }, [])
 
-  const generateRandomActivity = () => {
-    const actions = [
-      { agent: 'Digital Forensics', action: 'Scanning domain reputation', type: 'info' },
-      { agent: 'Financial Sleuth', action: 'Analyzing financial statements', type: 'info' },
-      { agent: 'Privacy Guardian', action: 'Detecting PII in documents', type: 'warning' },
-      { agent: 'Compliance Orchestrator', action: 'Validating security controls', type: 'info' },
-      { agent: 'Risk Synthesizer', action: 'Calculating composite risk score', type: 'success' },
-      { agent: 'Intake Agent', action: 'Processing new vendor application', type: 'info' },
-    ]
-    const action = actions[Math.floor(Math.random() * actions.length)]
-    return {
-      id: Date.now(),
-      ...action,
-      time: new Date()
+  // Load activity feed from message bus
+  useEffect(() => {
+    const loadActivities = () => {
+      const messages = messageBus.getMessages()
+      
+      // Transform messages to activity format
+      const activityData = messages
+        .filter(m => m.type === 'activity' || m.type === 'finding')
+        .slice(-20) // Last 20 activities
+        .reverse()
+        .map(m => ({
+          id: m.id,
+          agent: m.agent,
+          action: m.action || m.finding || m.message,
+          time: new Date(m.timestamp).toLocaleTimeString(),
+          type: m.type,
+          severity: m.severity || 'info'
+        }))
+      
+      setActivities(activityData)
     }
-  }
+
+    loadActivities()
+
+    // Poll for new activities
+    const interval = setInterval(loadActivities, 2000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const agents = [
+    { id: 1, name: 'Intake Agent', status: 'idle', icon: '📋', tasksActive: 0, color: 'green' },
+    { id: 2, name: 'Digital Forensics Agent', status: 'idle', icon: '🔍', tasksActive: 0, color: 'blue' },
+    { id: 3, name: 'Financial Sleuth Agent', status: 'idle', icon: '💰', tasksActive: 0, color: 'yellow' },
+    { id: 4, name: 'Compliance Orchestrator Agent', status: 'idle', icon: '⚖️', tasksActive: 0, color: 'purple' },
+    { id: 5, name: 'Privacy Guardian Agent', status: 'idle', icon: '🔒', tasksActive: 0, color: 'pink' },
+    { id: 6, name: 'Risk Synthesizer Agent', status: 'idle', icon: '🎯', tasksActive: 0, color: 'orange' },
+  ]
+
+  // No more mock vendor data - using real data from localStorage
 
   const getRiskColor = (level) => {
     switch (level) {

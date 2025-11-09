@@ -2,14 +2,19 @@ import React, { useState, useEffect } from 'react'
 import { Upload, Shield, CheckCircle, Clock, FileText, AlertTriangle, Loader } from 'lucide-react'
 import { extractTextFromDocument, isValidFileType, isValidFileSize } from '../services/ocrService'
 import { parseVendorDocument } from '../services/documentParser'
+import { investigateVendor, saveInvestigation } from '../services/agentOrchestrator'
+import { useNavigate } from 'react-router-dom'
 
 const VendorOnboarding = () => {
+  const navigate = useNavigate()
   const [currentStage, setCurrentStage] = useState(0)
   const [uploadedFile, setUploadedFile] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingStatus, setProcessingStatus] = useState('')
   const [isDragging, setIsDragging] = useState(false)
   const [error, setError] = useState('')
+  const [investigationComplete, setInvestigationComplete] = useState(false)
+  const [investigationResults, setInvestigationResults] = useState(null)
   
   const [formData, setFormData] = useState({
     companyName: '',
@@ -19,18 +24,24 @@ const VendorOnboarding = () => {
     address: '',
     businessType: '',
     services: '',
+    servicesDescription: '',
     yearsInBusiness: '',
     annualRevenue: '',
     insurance: '',
+    insuranceInfo: '',
     certifications: '',
+    website: '',
+    companyWebsite: '',
   })
 
   const [fieldConfidence, setFieldConfidence] = useState({})
   const [agentStatus, setAgentStatus] = useState([
     { name: 'Intake Agent', status: 'active', task: 'Awaiting document upload' },
-    { name: 'Digital Forensics', status: 'idle', task: 'Standing by' },
-    { name: 'Financial Sleuth', status: 'idle', task: 'Standing by' },
-    { name: 'Privacy Guardian', status: 'idle', task: 'Standing by' },
+    { name: 'Digital Forensics Agent', status: 'idle', task: 'Standing by' },
+    { name: 'Financial Sleuth Agent', status: 'idle', task: 'Standing by' },
+    { name: 'Privacy Guardian Agent', status: 'idle', task: 'Standing by' },
+    { name: 'Compliance Orchestrator Agent', status: 'idle', task: 'Standing by' },
+    { name: 'Risk Synthesizer Agent', status: 'idle', task: 'Standing by' },
   ])
 
   const stages = [
@@ -188,14 +199,51 @@ const VendorOnboarding = () => {
     return 'border-green-400 bg-green-50'
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setCurrentStage(3)
+    setIsProcessing(true)
+    setProcessingStatus('🚀 Launching AI agents...')
+
+    // Activate all agents
     setAgentStatus(prev => prev.map(agent => ({
       ...agent,
       status: 'active',
-      task: agent.name === 'Intake Agent' ? 'Submission complete' : 'Analyzing vendor data'
+      task: agent.name === 'Intake Agent' ? 'Validating data...' : 'Initializing...'
     })))
+
+    try {
+      // Run the full investigation with all 6 agents
+      const results = await investigateVendor(formData)
+      
+      // Save to localStorage for admin dashboard
+      saveInvestigation(results)
+      
+      // Store results
+      setInvestigationResults(results)
+      setInvestigationComplete(true)
+      setProcessingStatus('✅ Investigation complete!')
+
+      // Update agent status to show completion
+      setAgentStatus(prev => prev.map(agent => ({
+        ...agent,
+        status: 'complete',
+        task: 'Analysis complete'
+      })))
+
+      console.log('✅ Investigation complete:', results)
+      
+      // After 2 seconds, show option to view results
+      setTimeout(() => {
+        setIsProcessing(false)
+      }, 1500)
+
+    } catch (err) {
+      console.error('Investigation failed:', err)
+      setError(`Investigation failed: ${err.message}`)
+      setProcessingStatus('❌ Investigation failed')
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -522,11 +570,11 @@ const VendorOnboarding = () => {
               <h3 className="font-serif text-lg font-normal text-gs-navy mb-5">Agent Status</h3>
               <div className="space-y-4">
                 {agentStatus.map((agent, index) => (
-                  <div key={index} className={`border-t-2 pt-3 ${agent.status === 'active' ? 'border-gs-blue' : 'border-gray-200'}`}>
+                  <div key={index} className={`border-t-2 pt-3 ${agent.status === 'active' ? 'border-gs-blue' : agent.status === 'complete' ? 'border-green-500' : 'border-gray-200'}`}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm text-gs-navy">{agent.name}</span>
                       <span className={`text-xs uppercase tracking-wider ${
-                        agent.status === 'active' ? 'text-gs-blue' : 'text-gray-400'
+                        agent.status === 'active' ? 'text-gs-blue' : agent.status === 'complete' ? 'text-green-600' : 'text-gray-400'
                       }`}>
                         {agent.status}
                       </span>
@@ -535,6 +583,48 @@ const VendorOnboarding = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Investigation Complete - Show Results */}
+              {investigationComplete && investigationResults && (
+                <div className="mt-6 pt-6 border-t-2 border-gray-200">
+                  <div className="text-center">
+                    <div className={`text-6xl font-serif mb-2 ${
+                      investigationResults.riskLevel === 'low' ? 'text-green-600' :
+                      investigationResults.riskLevel === 'medium' ? 'text-yellow-600' :
+                      'text-red-600'
+                    }`}>
+                      {investigationResults.riskScore}
+                    </div>
+                    <div className="text-xs text-gray-500 uppercase tracking-wider mb-4">
+                      Risk Score
+                    </div>
+                    <div className={`inline-block px-4 py-2 text-xs uppercase tracking-wider ${
+                      investigationResults.riskLevel === 'low' ? 'bg-green-50 text-green-700' :
+                      investigationResults.riskLevel === 'medium' ? 'bg-yellow-50 text-yellow-700' :
+                      'bg-red-50 text-red-700'
+                    }`}>
+                      {investigationResults.riskLevel} Risk
+                    </div>
+                    <div className="mt-4 text-xs text-gray-600">
+                      {investigationResults.recommendation === 'approve' && '✓ Recommended for approval'}
+                      {investigationResults.recommendation === 'review' && '⚠ Requires human review'}
+                      {investigationResults.recommendation === 'reject' && '✗ Recommend rejection'}
+                    </div>
+                    <button
+                      onClick={() => navigate(`/admin/vendor/${investigationResults.vendorId}`)}
+                      className="mt-6 w-full px-4 py-3 bg-gs-blue text-white text-xs uppercase tracking-wider hover:bg-gs-blue-dark transition-colors"
+                    >
+                      View Full Report
+                    </button>
+                    <button
+                      onClick={() => navigate('/admin')}
+                      className="mt-2 w-full px-4 py-3 border border-gray-300 text-gs-navy text-xs uppercase tracking-wider hover:bg-gray-50 transition-colors"
+                    >
+                      Go to Dashboard
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Help Section */}

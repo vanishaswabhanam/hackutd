@@ -1,184 +1,130 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { 
   ArrowLeft, Shield, AlertTriangle, CheckCircle, 
   FileText, Activity, MessageSquare, Clock,
   XCircle, Mail, Download, Eye
 } from 'lucide-react'
+import { getInvestigation } from '../services/agentOrchestrator'
+import messageBus from '../services/messageBus'
 
 const VendorDetail = () => {
   const { id } = useParams()
   const [activeTab, setActiveTab] = useState('timeline')
+  const [investigation, setInvestigation] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  // Mock vendor data
+  // Load investigation data
+  useEffect(() => {
+    const loadInvestigation = () => {
+      const data = getInvestigation(id)
+      if (data) {
+        setInvestigation(data)
+        setLoading(false)
+      }
+    }
+
+    loadInvestigation()
+    
+    // Poll for updates
+    const interval = setInterval(loadInvestigation, 2000)
+    return () => clearInterval(interval)
+  }, [id])
+
+  if (loading || !investigation) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-12 h-12 text-gs-blue mx-auto mb-4 animate-pulse" />
+          <p className="text-gray-500">Loading investigation...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Transform investigation data to vendor format
   const vendor = {
-    id: parseInt(id),
-    name: 'TechCorp Solutions',
-    status: 'under-review',
-    riskScore: 35,
-    riskLevel: 'low',
-    submittedDate: '2025-11-09',
-    email: 'contact@techcorp.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Tech Street, San Francisco, CA 94105',
-    businessType: 'Software Development',
-    yearsInBusiness: 8,
+    id: investigation.vendorId,
+    name: investigation.vendorData.companyName || 'Unknown Company',
+    status: investigation.recommendation === 'approve' ? 'approved' : 
+            investigation.recommendation === 'reject' ? 'rejected' : 'under-review',
+    riskScore: investigation.riskScore,
+    riskLevel: investigation.riskLevel,
+    submittedDate: new Date(investigation.timestamp).toLocaleDateString(),
+    email: investigation.vendorData.email || 'Not provided',
+    phone: investigation.vendorData.phone || 'Not provided',
+    address: investigation.vendorData.address || 'Not provided',
+    businessType: investigation.vendorData.businessType || 'Not specified',
+    yearsInBusiness: investigation.vendorData.yearsInBusiness || 'Not specified',
+    website: investigation.vendorData.website || investigation.vendorData.companyWebsite || 'Not provided',
+    taxId: investigation.vendorData.taxId || 'Not provided',
   }
 
-  const timeline = [
-    {
-      id: 1,
-      agent: 'Intake Agent',
-      icon: '📋',
-      action: 'Vendor submission received',
-      details: 'All required documents uploaded successfully',
-      time: '2025-11-09 09:00 AM',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      agent: 'Privacy Guardian',
-      icon: '🔒',
-      action: 'PII detection scan completed',
-      details: 'Found and masked 8 PII fields across 3 documents',
-      time: '2025-11-09 09:15 AM',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      agent: 'Digital Forensics',
-      icon: '🔍',
-      action: 'Domain reputation check',
-      details: 'Domain age: 8 years. No suspicious activity detected.',
-      time: '2025-11-09 09:30 AM',
-      status: 'completed'
-    },
-    {
-      id: 4,
-      agent: 'Financial Sleuth',
-      icon: '💰',
-      action: 'Credit and financial analysis',
-      details: 'Credit score: 720. Financial statements verified.',
-      time: '2025-11-09 10:00 AM',
-      status: 'in-progress'
-    },
-    {
-      id: 5,
-      agent: 'Compliance Orchestrator',
-      icon: '⚖️',
-      action: 'Baseline security controls check',
-      details: 'Pending completion of financial review',
-      time: 'Queued',
-      status: 'pending'
-    },
-    {
-      id: 6,
-      agent: 'Risk Synthesizer',
-      icon: '🎯',
-      action: 'Final risk assessment',
-      details: 'Awaiting all agent reports',
-      time: 'Queued',
-      status: 'pending'
-    },
-  ]
+  // Build timeline from investigation messages
+  const timeline = investigation.interAgentMessages
+    ? investigation.interAgentMessages
+        .filter(m => m.type === 'activity')
+        .map((m, idx) => ({
+          id: idx + 1,
+          agent: m.agent,
+          icon: m.agent.includes('Intake') ? '📋' :
+                m.agent.includes('Digital') ? '🔍' :
+                m.agent.includes('Financial') ? '💰' :
+                m.agent.includes('Compliance') ? '⚖️' :
+                m.agent.includes('Privacy') ? '🔒' :
+                m.agent.includes('Risk') ? '🎯' : '🤖',
+          action: m.action,
+          details: m.metadata ? JSON.stringify(m.metadata) : '',
+          time: new Date(m.timestamp).toLocaleString(),
+          status: m.metadata?.status || 'completed'
+        }))
+    : []
 
-  const forensicsReport = {
-    domain: {
-      age: '8 years 3 months',
-      reputation: 'Excellent',
-      ssl: 'Valid (expires 2026-03-15)',
-      blacklisted: false,
-    },
-    socialMedia: {
-      linkedin: 'Active (1,200+ employees)',
-      twitter: 'Active (5,400 followers)',
-      verified: true,
-    },
-    webPresence: {
-      traffic: 'High (500K+ monthly visits)',
-      backlinks: '1,200+ quality backlinks',
-      contentAge: 'Regularly updated',
-    },
-    incidents: {
-      dataBreaches: 0,
-      lawsuits: 0,
-      complaints: 2,
-      resolved: 2,
-    },
-    score: 92,
+  // Real agent reports from investigation
+  const forensicsReport = investigation.agentResults?.digital || {
+    findings: ['No digital forensics data available'],
+    riskIndicators: [],
+    score: 50,
   }
 
-  const financialReport = {
-    creditScore: 720,
-    creditRating: 'Good',
-    annualRevenue: '$12.5M',
-    yearlyGrowth: '+18%',
-    debtToEquity: '0.45',
-    paymentHistory: 'Excellent (98% on-time)',
-    bankruptcies: 0,
-    taxCompliance: 'Current',
-    bankReferences: 2,
-    score: 85,
+  const financialReport = investigation.agentResults?.financial || {
+    findings: ['No financial data available'],
+    riskIndicators: [],
+    score: 50,
   }
 
-  const complianceReport = {
-    identityManagement: {
-      status: 'compliant',
-      details: 'MFA enabled, SSO implemented',
-    },
-    encryption: {
-      status: 'compliant',
-      details: 'AES-256 for data at rest, TLS 1.3 for transit',
-    },
-    logging: {
-      status: 'compliant',
-      details: 'Centralized logging with 90-day retention',
-    },
-    networkSecurity: {
-      status: 'partial',
-      details: 'Firewall configured, IDS/IPS pending verification',
-    },
-    accessControl: {
-      status: 'compliant',
-      details: 'RBAC implemented with quarterly audits',
-    },
-    score: 78,
+  const complianceReport = investigation.agentResults?.compliance || {
+    findings: ['No compliance data available'],
+    complianceGaps: [],
+    certifications: [],
+    score: 50,
   }
 
-  const privacyReport = {
-    piiFields: 8,
-    piiMasked: 8,
-    piiTypes: ['SSN', 'Email', 'Phone', 'Address', 'DOB'],
-    dataCategories: ['Customer Data', 'Employee Records', 'Financial Info'],
-    retention: 'Compliant with GDPR/CCPA',
-    encryption: 'All PII encrypted at rest',
-    accessLogs: 'Enabled with audit trail',
-    score: 95,
+  const privacyReport = investigation.agentResults?.privacy || {
+    findings: ['No privacy data available'],
+    piiDetected: [],
+    score: 50,
   }
 
-  const interAgentComms = [
-    {
-      id: 1,
-      from: 'Digital Forensics',
-      to: 'Financial Sleuth',
-      message: 'Found clean domain history. Recommend standard financial review.',
-      time: '09:35 AM',
-    },
-    {
-      id: 2,
-      from: 'Privacy Guardian',
-      to: 'Compliance Orchestrator',
-      message: 'All PII successfully masked. Safe to proceed with compliance checks.',
-      time: '09:20 AM',
-    },
-    {
-      id: 3,
-      from: 'Financial Sleuth',
-      to: 'Risk Synthesizer',
-      message: 'Financial health looks good. Minor concerns with debt ratio, but within acceptable range.',
-      time: '10:15 AM',
-    },
-  ]
+  const intakeReport = investigation.agentResults?.intake || {
+    findings: ['No intake data available'],
+    missingFields: [],
+    score: 50,
+  }
+
+  // Real inter-agent communications
+  const interAgentComms = investigation.interAgentMessages
+    ? investigation.interAgentMessages
+        .filter(m => m.type === 'communication')
+        .map((m, idx) => ({
+          id: idx + 1,
+          from: m.from,
+          to: m.to,
+          message: m.message,
+          time: new Date(m.timestamp).toLocaleTimeString(),
+          priority: m.priority
+        }))
+    : []
 
   const getRiskColor = (level) => {
     switch (level) {
@@ -410,7 +356,7 @@ const VendorDetail = () => {
 
               {/* Forensics Tab */}
               {activeTab === 'forensics' && (
-                <div className="space-y-12">
+                <div className="space-y-8">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gs-blue uppercase tracking-wider mb-2">Report</p>
@@ -422,70 +368,29 @@ const VendorDetail = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-8">
-                    <div className="border-t-2 border-gs-blue pt-4">
-                      <h4 className="text-sm font-medium text-gs-navy mb-4">
-                        Domain Analysis
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Age</span>
-                          <span className="text-gs-navy">{forensicsReport.domain.age}</span>
+                  <div className="border-t-2 border-gs-blue pt-6">
+                    <h4 className="text-sm font-medium text-gs-navy mb-4">Findings</h4>
+                    <div className="space-y-2">
+                      {forensicsReport.findings && forensicsReport.findings.map((finding, idx) => (
+                        <div key={idx} className="py-2 border-b border-gray-100 text-sm text-gray-700">
+                          {finding}
                         </div>
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Reputation</span>
-                          <span className="text-gs-navy">{forensicsReport.domain.reputation}</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">SSL Status</span>
-                          <span className="text-gs-navy">{forensicsReport.domain.ssl}</span>
-                        </div>
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-500">Blacklisted</span>
-                          <span className="text-gs-navy">No</span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
+                  </div>
 
-                    <div className="border-t-2 border-gs-blue pt-4">
-                      <h4 className="text-sm font-medium text-gs-navy mb-4">
-                        Social Media Presence
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">LinkedIn</span>
-                          <span className="text-gs-navy">{forensicsReport.socialMedia.linkedin}</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Twitter</span>
-                          <span className="text-gs-navy">{forensicsReport.socialMedia.twitter}</span>
-                        </div>
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-500">Verified</span>
-                          <span className="text-gs-navy">Yes</span>
-                        </div>
+                  {forensicsReport.riskIndicators && forensicsReport.riskIndicators.length > 0 && (
+                    <div className="border-t-2 border-red-300 pt-6">
+                      <h4 className="text-sm font-medium text-red-600 mb-4">Risk Indicators</h4>
+                      <div className="space-y-2">
+                        {forensicsReport.riskIndicators.map((indicator, idx) => (
+                          <div key={idx} className="py-2 border-b border-gray-100 text-sm text-red-600">
+                            ⚠️ {indicator}
+                          </div>
+                        ))}
                       </div>
                     </div>
-
-                    <div className="border-t-2 border-gs-blue pt-4">
-                      <h4 className="text-sm font-medium text-gs-navy mb-4">
-                        Web Presence
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Traffic</span>
-                          <span className="text-gs-navy">{forensicsReport.webPresence.traffic}</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Backlinks</span>
-                          <span className="text-gs-navy">{forensicsReport.webPresence.backlinks}</span>
-                        </div>
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-500">Content</span>
-                          <span className="text-gs-navy">{forensicsReport.webPresence.contentAge}</span>
-                        </div>
-                      </div>
-                    </div>
+                  )}
 
                     <div className="border-t-2 border-gs-blue pt-4">
                       <h4 className="text-sm font-medium text-gs-navy mb-4">
