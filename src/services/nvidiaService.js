@@ -2,7 +2,7 @@
 
 // IMPORTANT: Get your API key from https://build.nvidia.com/
 // For hackathon: Use the free tier with meta/llama-3.1-8b-instruct or nvidia/nemotron-mini
-const NVIDIA_API_KEY = 'nvapi-YOUR_KEY_HERE'; // TODO: Replace with your actual key
+const NVIDIA_API_KEY = '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';
 const NVIDIA_API_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 
 // Default model - fast and free tier available

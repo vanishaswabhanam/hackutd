@@ -391,37 +391,12 @@ const VendorDetail = () => {
                       </div>
                     </div>
                   )}
-
-                    <div className="border-t-2 border-gs-blue pt-4">
-                      <h4 className="text-sm font-medium text-gs-navy mb-4">
-                        Incident History
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Data Breaches</span>
-                          <span className="text-gs-navy">{forensicsReport.incidents.dataBreaches}</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Lawsuits</span>
-                          <span className="text-gs-navy">{forensicsReport.incidents.lawsuits}</span>
-                        </div>
-                        <div className="flex justify-between py-2 border-b border-gray-100">
-                          <span className="text-gray-500">Complaints</span>
-                          <span className="text-gs-navy">{forensicsReport.incidents.complaints}</span>
-                        </div>
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-500">Resolved</span>
-                          <span className="text-gs-navy">{forensicsReport.incidents.resolved}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
 
               {/* Financial Tab */}
               {activeTab === 'financial' && (
-                <div className="space-y-12">
+                <div className="space-y-8">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gs-blue uppercase tracking-wider mb-2">Report</p>
@@ -433,49 +408,35 @@ const VendorDetail = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-gs-gray p-4 rounded-lg">
-                      <h4 className="font-semibold mb-3">Credit Profile</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Credit Score:</span>
-                          <span className="font-medium text-green-600">{financialReport.creditScore}</span>
+                  <div className="border-t-2 border-gs-blue pt-6">
+                    <h4 className="text-sm font-medium text-gs-navy mb-4">Findings</h4>
+                    <div className="space-y-2">
+                      {financialReport.findings && financialReport.findings.map((finding, idx) => (
+                        <div key={idx} className="py-2 border-b border-gray-100 text-sm text-gray-700">
+                          {finding}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Rating:</span>
-                          <span className="font-medium">{financialReport.creditRating}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Payment History:</span>
-                          <span className="font-medium">{financialReport.paymentHistory}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gs-gray p-4 rounded-lg">
-                      <h4 className="font-semibold mb-3">Financial Health</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Annual Revenue:</span>
-                          <span className="font-medium">{financialReport.annualRevenue}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Growth:</span>
-                          <span className="font-medium text-green-600">{financialReport.yearlyGrowth}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Debt/Equity:</span>
-                          <span className="font-medium">{financialReport.debtToEquity}</span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
+
+                  {financialReport.riskIndicators && financialReport.riskIndicators.length > 0 && (
+                    <div className="border-t-2 border-red-300 pt-6">
+                      <h4 className="text-sm font-medium text-red-600 mb-4">Risk Indicators</h4>
+                      <div className="space-y-2">
+                        {financialReport.riskIndicators.map((indicator, idx) => (
+                          <div key={idx} className="py-2 border-b border-gray-100 text-sm text-red-600">
+                            ⚠️ {indicator}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Compliance Tab */}
               {activeTab === 'compliance' && (
-                <div className="space-y-12">
+                <div className="space-y-8">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gs-blue uppercase tracking-wider mb-2">Report</p>
@@ -487,29 +448,48 @@ const VendorDetail = () => {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    {Object.entries(complianceReport).filter(([key]) => key !== 'score').map(([key, value]) => (
-                      <div key={key} className="border border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</h4>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            value.status === 'compliant' ? 'bg-green-100 text-green-700' :
-                            value.status === 'partial' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-red-100 text-red-700'
-                          }`}>
-                            {value.status.toUpperCase()}
-                          </span>
+                  <div className="border-t-2 border-gs-blue pt-6">
+                    <h4 className="text-sm font-medium text-gs-navy mb-4">Findings</h4>
+                    <div className="space-y-2">
+                      {complianceReport.findings && complianceReport.findings.map((finding, idx) => (
+                        <div key={idx} className="py-2 border-b border-gray-100 text-sm text-gray-700">
+                          {finding}
                         </div>
-                        <p className="text-sm text-gray-600">{value.details}</p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+
+                  {complianceReport.complianceGaps && complianceReport.complianceGaps.length > 0 && (
+                    <div className="border-t-2 border-red-300 pt-6">
+                      <h4 className="text-sm font-medium text-red-600 mb-4">Compliance Gaps</h4>
+                      <div className="space-y-2">
+                        {complianceReport.complianceGaps.map((gap, idx) => (
+                          <div key={idx} className="py-2 border-b border-gray-100 text-sm text-red-600">
+                            ⚠️ {gap}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {complianceReport.certifications && complianceReport.certifications.length > 0 && (
+                    <div className="border-t-2 border-green-300 pt-6">
+                      <h4 className="text-sm font-medium text-green-600 mb-4">Certifications Found</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {complianceReport.certifications.map((cert, idx) => (
+                          <span key={idx} className="px-3 py-1 bg-green-100 text-green-700 text-sm rounded">
+                            ✓ {cert}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Privacy Tab */}
               {activeTab === 'privacy' && (
-                <div className="space-y-12">
+                <div className="space-y-8">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-gs-blue uppercase tracking-wider mb-2">Report</p>
@@ -521,49 +501,41 @@ const VendorDetail = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-gs-gray p-4 rounded-lg">
-                      <h4 className="font-semibold mb-3">PII Detection</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Fields Found:</span>
-                          <span className="font-medium">{privacyReport.piiFields}</span>
+                  <div className="border-t-2 border-gs-blue pt-6">
+                    <h4 className="text-sm font-medium text-gs-navy mb-4">Findings</h4>
+                    <div className="space-y-2">
+                      {privacyReport.findings && privacyReport.findings.map((finding, idx) => (
+                        <div key={idx} className="py-2 border-b border-gray-100 text-sm text-gray-700">
+                          {finding}
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Fields Masked:</span>
-                          <span className="font-medium text-green-600">{privacyReport.piiMasked}</span>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <p className="text-xs text-gray-600 mb-2">Types Detected:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {privacyReport.piiTypes.map(type => (
-                            <span key={type} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
-                              {type}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gs-gray p-4 rounded-lg">
-                      <h4 className="font-semibold mb-3">Data Protection</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex items-start">
-                          <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5" />
-                          <span>{privacyReport.encryption}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5" />
-                          <span>{privacyReport.retention}</span>
-                        </div>
-                        <div className="flex items-start">
-                          <CheckCircle className="w-4 h-4 text-green-500 mr-2 mt-0.5" />
-                          <span>{privacyReport.accessLogs}</span>
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </div>
+
+                  {privacyReport.piiDetected && privacyReport.piiDetected.length > 0 && (
+                    <div className="border-t-2 border-yellow-300 pt-6">
+                      <h4 className="text-sm font-medium text-yellow-700 mb-4">PII Detected</h4>
+                      <div className="space-y-3">
+                        {privacyReport.piiDetected.map((pii, idx) => (
+                          <div key={idx} className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                            <div className="flex justify-between mb-1">
+                              <span className="font-medium text-yellow-900">{pii.type}</span>
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                pii.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                                pii.severity === 'high' ? 'bg-orange-100 text-orange-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              }`}>
+                                {pii.severity?.toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              Found {pii.count} instance{pii.count > 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
