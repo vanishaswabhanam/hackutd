@@ -165,7 +165,7 @@ const AdminDashboard = () => {
                     <p className="text-xs font-medium text-gray-900 mb-1">{activity.agent}</p>
                     <p className="text-sm text-gray-600 mb-2 leading-relaxed">{activity.action}</p>
                     <p className="text-xs text-gray-400">
-                      {activity.time.toLocaleTimeString()}
+                      {activity.time}
                     </p>
                   </div>
                 ))}
