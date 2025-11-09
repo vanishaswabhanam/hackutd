@@ -322,6 +322,387 @@ Each step involves conditional logic, external API calls, and reasoning about ne
 
 ---
 
+## Development Roadmap: Building Real Agent Intelligence
+
+### Current State Assessment
+
+**What's Working:**
+- OCR document upload and parsing (real API integration)
+- Form auto-fill with confidence indicators
+- Complete UI for all 3 pages with Goldman Sachs styling
+- Frontend state management and routing
+- Mock data displaying properly in dashboards
+
+**What's Simulated:**
+- Agent investigations (UI shows status but no real processing)
+- Risk scoring (hardcoded values, not calculated)
+- Inter-agent communication (displayed but not happening)
+- Background checks (no actual API calls to data sources)
+
+### Implementation Strategy: Incremental Build Without Breaking UI
+
+**Principle:** Build backend agent logic separately, then connect to existing frontend through well-defined interfaces. UI stays functional throughout development.
+
+---
+
+### Sprint 1: Agent Infrastructure (2-3 days)
+
+**Goal:** Set up NVIDIA NIM API and create agent orchestration framework
+
+**Tasks:**
+1. **Create Agent Service Layer**
+   - New file: `src/services/agentOrchestrator.js`
+   - Defines agent interface: `runAgent(agentType, vendorData)` returns `{ findings, confidence, evidence, nextSteps }`
+   - Manages agent state and coordination
+   - Handles parallel execution with Promise.all
+
+2. **NVIDIA NIM Integration**
+   - New file: `src/services/nvidiaService.js`
+   - Set up NVIDIA NIM API credentials
+   - Create prompt templates for each agent type
+   - Implement retry logic and error handling
+
+3. **Message Bus for Inter-Agent Communication**
+   - New file: `src/services/messageBus.js`
+   - Event-driven system for agent-to-agent messages
+   - Queue system for dependent investigations
+   - Real-time updates pushed to frontend via WebSocket or polling
+
+**Integration Point:** VendorOnboarding.jsx handleSubmit() calls agentOrchestrator.startInvestigation(formData) but UI continues working with fallback to mock data if API fails
+
+---
+
+### Sprint 2: Individual Agent Implementation (3-4 days)
+
+**Goal:** Build each agent's investigation logic one at a time
+
+**Agent 1: Digital Forensics (Start Here - Easiest to Demo)**
+
+File: `src/agents/digitalForensicsAgent.js`
+
+Tasks:
+- Scrape company website using Puppeteer or Cheerio
+- Extract: domain age via WHOIS API, SSL cert info, meta tags, contact info
+- Check social media APIs (LinkedIn public profiles, Twitter/X)
+- Domain reputation via VirusTotal API (free tier)
+- Return structured findings with evidence URLs
+
+Prompt Engineering:
+```
+Analyze this company data and web presence:
+Company: {name}, Website: {url}, Industry: {type}
+
+Your investigation should:
+1. Verify website authenticity (look for stock photos, generic content)
+2. Check domain age and hosting patterns
+3. Analyze social media presence consistency
+4. Identify red flags (missing contact info, suspicious patterns)
+
+Return JSON: { findings: [], riskIndicators: [], confidenceScore: 0-100, evidence: [] }
+```
+
+**Agent 2: Privacy Guardian (Parallel with Forensics)**
+
+File: `src/agents/privacyGuardianAgent.js`
+
+Tasks:
+- Enhance existing OCR parsing to detect PII patterns
+- SSN: \d{3}-\d{2}-\d{4}
+- Credit cards: \d{4}-\d{4}-\d{4}-\d{4}
+- Addresses with regex for street patterns
+- Auto-mask detected PII before storing
+- Generate privacy report with masked count
+
+**Agent 3: Financial Sleuth**
+
+File: `src/agents/financialSleuthAgent.js`
+
+Tasks:
+- Tax ID validation via IRS TIN matching (if available) or checksum
+- Business entity search via OpenCorporates API (free)
+- SEC EDGAR search for public filings
+- Credit data via Experian/Equifax APIs (may need sandbox accounts)
+- Pattern analysis: claimed revenue vs. company age vs. employee count
+
+**Agent 4: Compliance Orchestrator**
+
+File: `src/agents/complianceOrchestratorAgent.js`
+
+Tasks:
+- Generate dynamic questionnaire based on business type
+- Check SOC2 registry (varies by auditor)
+- ISO certification lookup APIs
+- Validate security claims against industry standards
+- Score compliance based on documentation provided
+
+**Agent 5: Risk Synthesizer (Build Last)**
+
+File: `src/agents/riskSynthesizerAgent.js`
+
+Tasks:
+- Aggregate all agent findings
+- Weight risk factors: fraud signals (high), missing docs (medium), age (low)
+- Detect contradictions across agent reports
+- Calculate composite risk score: 0-100 scale
+- Generate executive summary with evidence links
+- Make approve/reject/escalate decision based on thresholds
+
+**Integration Pattern for Each Agent:**
+
+In VendorOnboarding.jsx:
+```javascript
+// After form submit
+const results = await agentOrchestrator.investigate(formData)
+setAgentStatus(results.agentUpdates) // Updates UI in real-time
+```
+
+In AdminDashboard.jsx:
+```javascript
+// Poll for updates every 2 seconds
+useEffect(() => {
+  const interval = setInterval(async () => {
+    const updates = await fetchAgentActivity()
+    setActivities(updates)
+  }, 2000)
+}, [])
+```
+
+---
+
+### Sprint 3: Inter-Agent Communication (1-2 days)
+
+**Goal:** Agents trigger each other based on findings
+
+**Implementation:**
+
+File: `src/services/messageBus.js` enhancement
+
+Pattern:
+```javascript
+// Financial Sleuth finds suspicious Tax ID
+messageBus.emit('suspicious-entity', { 
+  from: 'Financial Sleuth',
+  to: 'Digital Forensics',
+  priority: 'high',
+  data: { taxId, reason: 'Invalid checksum' }
+})
+
+// Digital Forensics listens and acts
+messageBus.on('suspicious-entity', async (msg) => {
+  await deepDomainInvestigation(msg.data)
+})
+```
+
+**Agent Communication Scenarios:**
+
+1. Privacy Guardian finds excessive PII → Compliance Orchestrator checks security controls
+2. Digital Forensics finds shell company signals → Financial Sleuth validates entity registration
+3. Multiple red flags from any agent → Risk Synthesizer escalates to human review
+4. All agents report clean → Risk Synthesizer auto-approves
+
+**UI Integration:**
+
+VendorDetail.jsx "Agent Comms" tab pulls real messages from:
+```javascript
+const comms = await fetchInterAgentMessages(vendorId)
+// Display in chronological order with actual content
+```
+
+---
+
+### Sprint 4: Real-Time Dashboard Updates (1 day)
+
+**Goal:** Admin sees live agent activity as it happens
+
+**Options:**
+
+**Option A: WebSocket (Ideal for hackathon demo)**
+- Set up simple WebSocket server
+- Agents push events: `ws.send({ type: 'agent-update', agent: 'Digital Forensics', action: 'Scraping website' })`
+- Frontend subscribes and updates UI instantly
+
+**Option B: Polling (Easier implementation)**
+- Backend stores agent events in memory array
+- Frontend polls `/api/activity` every 2 seconds
+- Append new activities to feed
+
+**Implementation:**
+
+In AdminDashboard.jsx:
+```javascript
+useEffect(() => {
+  const ws = new WebSocket('ws://localhost:3001')
+  ws.onmessage = (event) => {
+    const activity = JSON.parse(event.data)
+    setActivities(prev => [activity, ...prev])
+  }
+}, [])
+```
+
+---
+
+### Sprint 5: Risk Scoring Algorithm (1 day)
+
+**Goal:** Calculate actual risk scores from agent findings
+
+**Scoring Logic:**
+
+File: `src/services/riskCalculator.js`
+
+Formula:
+```
+Risk Score = weighted sum of:
+- Domain age < 1 year: +20 points
+- No social media presence: +15 points
+- Tax ID invalid: +30 points (major flag)
+- Missing insurance: +10 points
+- No certifications: +5 points
+- PII exposure in docs: +15 points
+- Compliance gaps: +10 per gap
+- Shell company indicators: +40 points
+
+Thresholds:
+0-35: Low risk (green) → Auto-approve
+36-70: Medium risk (yellow) → Human review
+71-100: High risk (red) → Reject or escalate
+```
+
+**Integration:**
+
+VendorDetail.jsx displays calculated score with breakdown showing which factors contributed
+
+---
+
+### Sprint 6: Evidence Trail & Audit Log (1 day)
+
+**Goal:** Every decision backed by evidence, full audit trail
+
+**Implementation:**
+
+File: `src/services/auditLogger.js`
+
+Each agent logs:
+- Timestamp
+- Action taken
+- Data sources accessed
+- Findings discovered
+- Evidence URLs/screenshots
+- Reasoning for conclusion
+
+Storage: localStorage for hackathon demo, database for production
+
+UI shows:
+- Timeline of agent actions with timestamps
+- Clickable evidence links
+- Export audit report as PDF
+
+---
+
+### Sprint 7: Error Handling & Polish (1 day)
+
+**Goal:** Graceful degradation when APIs fail
+
+**Patterns:**
+
+1. **API Timeout:** If NVIDIA NIM takes >30 seconds, show "Agent investigating..." but continue
+2. **Rate Limits:** Queue investigations, show estimated wait time
+3. **Missing Data:** Agents report "Insufficient data" instead of failing
+4. **Network Errors:** Fall back to partial investigation with lower confidence
+
+**UI Indicators:**
+- Loading spinners during processing
+- "Agent encountered issue" badges
+- Retry buttons for failed investigations
+- Clear error messages for users
+
+---
+
+### Testing Strategy
+
+**Unit Tests:**
+- Each agent function with mock data
+- Parser accuracy with various document formats
+- Risk calculator with known scenarios
+
+**Integration Tests:**
+- Full vendor flow: upload → parse → investigate → score → display
+- Agent communication triggers
+- UI updates when agent status changes
+
+**Demo Scenarios:**
+1. **Clean vendor:** TechCorp (auto-approves, low risk)
+2. **Suspicious vendor:** Fake company with red flags (high risk)
+3. **Medium risk:** Missing some docs, needs review
+
+---
+
+### Deployment for Hackathon Demo
+
+**Minimum Viable Demo:**
+- Working OCR upload ✓ (already done)
+- At least 2 agents with real logic (Digital Forensics + Privacy Guardian)
+- Risk score calculation (even if simplified)
+- Real-time dashboard updates (polling is fine)
+- One full end-to-end demo path working perfectly
+
+**Nice to Have:**
+- All 6 agents implemented
+- Inter-agent communication visible
+- WebSocket real-time updates
+- Evidence links clickable
+
+**Can Skip for Demo:**
+- Database persistence (use state/localStorage)
+- Authentication
+- Multi-tenant support
+- Production hosting
+
+---
+
+### Development Timeline Estimate
+
+**Aggressive (Hackathon pace): 7-10 days**
+- 2 days: Agent infrastructure
+- 3 days: Core agents (Forensics + Privacy + Financial)
+- 1 day: Risk scoring
+- 1 day: Real-time updates
+- 1 day: Polish and testing
+
+**Realistic (High quality): 2-3 weeks**
+- All agents fully implemented
+- Robust error handling
+- Comprehensive testing
+- Production-ready code
+
+**Current to MVP: 3-5 days** (if focusing on demo path only)
+- Digital Forensics agent (1 day)
+- Privacy Guardian enhancement (1 day)
+- Risk scoring (1 day)
+- Dashboard real-time (1 day)
+- Testing and polish (1 day)
+
+---
+
+### Critical Path for Success
+
+**Must Have:**
+1. One fully working agent that does real investigation (Digital Forensics recommended)
+2. Risk score that changes based on findings
+3. Dashboard shows real activity updates
+4. End-to-end demo works without crashes
+
+**Should Have:**
+2-3 agents working
+Inter-agent communication demo
+Evidence links
+
+**Could Have:**
+All 6 agents
+Full audit trail
+Advanced error handling
+
+---
+
 ## Risk Mitigation
 
 **API Rate Limits:** Implement caching, queue systems for batch processing  
