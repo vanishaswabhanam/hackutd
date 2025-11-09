@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            color: #1a1a1a;
+            background-color: #ffffff;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #f8f9fa;
+            padding: 20px 60px;
+            border-bottom: 1px solid #e5e5e5;
+        }
+
+        .logo {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+        }
+
+        nav {
+            margin-top: 15px;
+        }
+
+        nav a {
+            color: #1a1a1a;
+            text-decoration: none;
+            margin-right: 30px;
+            font-size: 14px;
+            font-weight: 400;
+            transition: color 0.2s;
+        }
+
+        nav a:hover {
+            color: #7297c5;
+        }
+
+        .hero {
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
+                        url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1600') center/cover;
+            padding: 120px 60px;
+            color: #ffffff;
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .hero h1 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 72px;
+            font-weight: 400;
+            line-height: 1.2;
+            max-width: 900px;
+            margin-bottom: 30px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            max-width: 700px;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 80px 60px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #7297c5;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .main-heading {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 56px;
+            font-weight: 400;
+            line-height: 1.3;
+            margin-bottom: 60px;
+            max-width: 1000px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .card {
+            background-color: #f8f9fa;
+            padding: 40px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border-top: 3px solid #7297c5;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(114, 151, 197, 0.15);
+        }
+
+        .card h3 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        .card p {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .card a {
+            color: #7297c5;
+            font-size: 14px;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px solid #7297c5;
+            padding-bottom: 2px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .card a:hover {
+            color: #5a7aa8;
+            border-bottom-color: #5a7aa8;
+        }
+
+        button {
+            background-color: #7297c5;
+            color: #ffffff;
+            padding: 15px 40px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #5a7aa8;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Goldman Sachs</div>
+        <nav>
+            <a href="#">What We Do</a>
+            <a href="#">Insights</a>
+            <a href="#">Our Firm</a>
+            <a href="#">Careers</a>
+        </nav>
+    </header>
+
+    <section class="hero">
+        <h1>The Latest Analysis on Markets and Innovation</h1>
+        <p>Dive deep into the forces shaping the markets and global economy with timely analysis from our specialists on trading floors and research desks.</p>
+        <button>Explore Insights</button>
+    </section>
+
+    <section class="content">
+        <div class="section-title">STAY INFORMED</div>
+        <h2 class="main-heading">The Firm in Action</h2>
+
+        <div class="cards">
+            <div class="card">
+                <h3>Leadership Excellence Program</h3>
+                <p>We recognize outstanding contributions to our business and the impact they make on our culture.</p>
+                <a href="#">Learn More →</a>
+            </div>
+
+            <div class="card">
+                <h3>Strategic Partnerships</h3>
+                <p>Building lasting relationships with clients and partners across global markets.</p>
+                <a href="#">Read More →</a>
+            </div>
+
+            <div class="card">
+                <h3>Innovation Summit 2025</h3>
+                <p>Join industry leaders for insights on technology, finance, and the future of business.</p>
+                <a href="#">Discover →</a>
+            </div>
+        </div>
+    </section>
+</body>
+</html>
+

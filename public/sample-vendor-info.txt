@@ -1,0 +1,34 @@
+VENDOR INFORMATION FORM
+
+Company Name: TechCorp Solutions
+
+Tax ID: 12-3456789
+
+Business Address:
+123 Tech Street
+San Francisco, CA 94105
+
+Contact Information:
+Email: contact@techcorp.com
+Phone: +1 (555) 123-4567
+
+Business Type: Software Development
+
+Services: Cloud infrastructure and SaaS solutions. We provide enterprise-grade 
+cloud computing services, custom software development, and managed IT services 
+for businesses of all sizes.
+
+Years in Business: Founded 2016
+
+Annual Revenue: $12.5M
+
+Insurance Information:
+GL Policy #12345, Exp: 12/2025
+Cyber Liability Coverage: $2M
+
+Certifications: SOC2 Type II, ISO 27001
+
+---
+This is a sample document for testing the OCR-based vendor onboarding system.
+You can upload this file to see the auto-fill functionality in action.
+
